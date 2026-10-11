@@ -6,7 +6,9 @@ Tenis pro jednoho hráče proti počítači. Plynulá Canvas hra v češtině, k
 
 Webová adresa po aktivaci GitHub Pages a úspěšném nasazení: **https://nachy7.github.io/Tenis/**.
 
-Pro hraní offline spusťte `npm run build` a otevřete `_site/play.html` v prohlížeči. Tento soubor obsahuje celou hru a můžete ho sdílet samostatně.
+**Bez čekání na hostování:** [stáhněte ZIP hry](https://github.com/nAchy7/Tenis/archive/refs/heads/main.zip), rozbalte jej a otevřete přiložený `play.html` v prohlížeči. Nepotřebujete instalaci ani server. Soubor obsahuje celou hru a můžete ho sdílet samostatně.
+
+Při vývoji `npm run build` sestaví aktuální verzi do `_site/play.html`; `npm run export` aktualizuje navíc přiložený `play.html` v kořeni repozitáře.
 
 ## Ovládání
 

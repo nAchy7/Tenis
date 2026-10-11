@@ -14,4 +14,5 @@ const standalone = html
   .replace('href="./favicon.svg"', () => `href="data:image/svg+xml,${encodeURIComponent(favicon)}"`)
   .replace('<script type="module" src="./app.js"></script>', () => `<script type="module">${engine.replace(/^export /gm, '')}\n${app.replace(/^import .*?;\n/, '')}</script>`);
 await writeFile(path.join(output, 'play.html'), standalone);
+if (process.argv.includes('--portable')) await writeFile(path.join(root, 'play.html'), standalone);
 console.log('Built static site in _site/ and offline game _site/play.html');

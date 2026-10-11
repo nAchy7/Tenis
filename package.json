@@ -8,6 +8,7 @@
     "start": "node server.js",
     "test": "node --test tests/*.test.js",
     "build": "node build.js",
+    "export": "node build.js --portable",
     "check": "node --check game.js && node --check app.js && node --check server.js && node --check build.js"
   },
   "engines": { "node": ">=20" }

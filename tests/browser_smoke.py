@@ -178,6 +178,7 @@ def desktop(browser, url, output):
     assert page.locator('#sound-label').inner_text() == original_sound
     page.locator('#assist-toggle').uncheck(force=True)
     assert not page.locator('#assist-toggle').is_checked()
+    assert page.evaluate('document.activeElement.id') == 'court'
     page.evaluate("""() => {
       document.querySelector('#court').focus();
       const g = window.__tennis, s = g.state;
@@ -192,6 +193,7 @@ def desktop(browser, url, output):
     assert page.evaluate('window.__tennis.state.ball.vz') > 6
     page.keyboard.up('l')
     page.locator('#assist-toggle').check(force=True)
+    assert page.evaluate('document.activeElement.id') == 'court'
 
     page.locator('#restart-button').click()
     await_phase(page, ['menu'])
@@ -235,7 +237,8 @@ def desktop(browser, url, output):
     no_overflow(page)
     assert not errors, errors
     context.close()
-    return {**rally, 'natural_point_scored': True, 'complete_controlled_set': '4:0', 'console_errors': errors}
+    return {**rally, 'natural_point_scored': True, 'complete_controlled_set': '4:0', 'manual_lob_assist_off':True,
+            'keyboard_pause_resume':True, 'console_errors': errors}
 
 
 def mobile(browser, url, output):
