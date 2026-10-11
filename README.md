@@ -20,6 +20,7 @@ Při vývoji `npm run build` sestaví aktuální verzi do `_site/play.html`; `np
 | Směr úderu | Q doleva, E doprava | Směr místa, kam vedete hráče |
 | Vysoký lob | L | LOB |
 | Pauza / pokračovat | Esc nebo P | Tlačítko Pauza |
+| Celá obrazovka / zpět | F; Esc pro návrat | Tlačítko Celá obrazovka / Zmenšit |
 
 Asistence automaticky načasuje základní úder, když hráč stojí blízko míčku. Lze ji vypnout na bočním panelu. Pohyb a správná pozice zůstávají na vás. Bez určeného směru hráč míří do volného prostoru. Tři obtížnosti mění rychlost, reakce a přesnost soupeře; soupeř běhá podle stejné fyziky, bez teleportování. Opuštění okna automaticky pozastaví zápas.
 

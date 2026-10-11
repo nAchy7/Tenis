@@ -6,3 +6,18 @@
 @media(max-width:520px){.header{padding:0 17px;height:62px}.brand{font-size:19px}.brand-ball{width:29px;height:29px;font-size:25px}.header-actions{gap:13px}.icon-button{font-size:10px}.layout{padding:12px 10px 0}.arena{border-radius:9px}.arena-top{padding:15px 17px 0;font-size:8px;letter-spacing:1px}.surface-label{font-size:7px}.scoreboard{min-width:0;width:calc(100% - 34px);padding:10px 12px;gap:10px;top:45px}.score-player{gap:7px}.player-name{font-size:9px}.score-player b{font-size:20px;min-width:24px}.score-player strong{font-size:13px}.canvas-wrap{height:calc(100dvh - 174px);min-height:470px;max-height:780px}.menu-card{padding:24px 22px 18px;max-width:340px;margin-top:38px}.menu-card h1{font-size:41px;margin:15px 0}.eyebrow{font-size:8px;letter-spacing:1.5px}.menu-card p{margin-bottom:18px;font-size:11px}.difficulty-picker button{font-size:11px;padding:10px 6px}.difficulty-picker small{font-size:8px}.primary-button{padding:14px 17px;font-size:12px}.menu-footnote{font-size:8px;margin-top:12px}.arena-bottom{padding:12px 14px;font-size:9px;min-height:50px}.small-button{font-size:9px}.arena-bottom>div{gap:4px}.court-footer{left:17px;right:17px;font-size:6px;letter-spacing:1.1px;bottom:13px}.page-footer{padding:14px 15px;font-size:6px;letter-spacing:1px}.game-notice{font-size:11px;top:63px;max-width:calc(100% - 24px);white-space:normal;min-width:210px}.compact h2{font-size:36px}.compact{padding:28px}dialog{padding:27px}}
 @media(pointer:coarse){body.playing .touch-controls{display:flex}}
 @media(prefers-reduced-motion:reduce){button,.game-notice{transition:none}}
+/* The game fills the screen while keeping score, pause and exit controls available. */
+.game-fullscreen body{height:100dvh;overflow:hidden;display:flex;flex-direction:column;background:var(--green)}
+.game-fullscreen .header{height:58px;min-height:58px;flex-shrink:0;max-width:none;width:100%;padding:0 24px;background:var(--paper)}
+.game-fullscreen .header-caption,.game-fullscreen .sidebar,.game-fullscreen .page-footer{display:none}
+.game-fullscreen .layout{display:flex;flex-direction:column;flex:1;min-height:0;max-width:none;width:100%;padding:0;margin:0;gap:0}
+.game-fullscreen .arena{display:flex;flex-direction:column;flex:1;min-height:0;border-radius:0}
+.game-fullscreen .arena-top{flex-shrink:0;padding-top:13px}
+.game-fullscreen .scoreboard{top:40px}
+.game-fullscreen .canvas-wrap{flex:1;height:auto;min-height:0;max-height:none}
+.game-fullscreen .arena-bottom{flex-shrink:0;min-height:46px;padding-top:10px;padding-bottom:10px}
+.game-fullscreen .overlay{overflow-y:auto;align-items:safe center;padding:12px 0}
+.game-fullscreen .menu-card{margin-top:25px;margin-bottom:10px}
+@media(max-width:600px){#fullscreen-label{display:none}.header-actions{gap:13px}.game-fullscreen .header{padding:0 17px}.game-fullscreen .scoreboard{top:33px}.game-fullscreen .menu-card{margin-top:30px}}
+@media(max-width:380px){#sound-label{display:none}}
+@media(max-height:500px){.game-fullscreen .header{height:44px;min-height:44px}.game-fullscreen .arena-top{padding-top:8px}.game-fullscreen .arena-bottom{min-height:35px;padding-top:5px;padding-bottom:5px}.game-fullscreen .scoreboard{top:27px;padding-top:5px;padding-bottom:5px}.game-fullscreen .menu-card{margin-top:50px}.game-fullscreen .game-notice{top:55px}}

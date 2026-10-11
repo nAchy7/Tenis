@@ -13,6 +13,8 @@ let noticeTimer = 0, soundEnabled = false, audioContext;
 let lastTime = 0, accumulator = 0, frameCount = 0, fpsTime = 0, elapsed = 0;
 let previousPhase = 'menu';
 let helpPaused = false;
+let fullscreenFallback = false;
+let fullscreenPending = false;
 const effects = [];
 const game = new TennisGame({ difficulty, onEvent: onGameEvent });
 // A read-only-accessible game instance also makes reproducible browser diagnostics possible.
@@ -83,6 +85,40 @@ $('finish-menu').addEventListener('click', backToMenu);
 $('pause-button').addEventListener('click', togglePause);
 $('resume-button').addEventListener('click', togglePause);
 $('assist-toggle').addEventListener('change', () => { if (isPlaying()) canvas.focus({ preventScroll: true }); });
+function nativeFullscreen() { return document.fullscreenElement || document.webkitFullscreenElement; }
+function syncFullscreen() {
+  const active = Boolean(nativeFullscreen() || fullscreenFallback);
+  document.documentElement.classList.toggle('game-fullscreen', active);
+  $('fullscreen-button').setAttribute('aria-pressed', String(active));
+  $('fullscreen-button').setAttribute('aria-label', active ? 'Opustit celou obrazovku' : 'Celá obrazovka');
+  $('fullscreen-button').title = `${active ? 'Opustit celou obrazovku' : 'Celá obrazovka'} (F)`;
+  $('fullscreen-label').textContent = active ? 'Zmenšit' : 'Celá obrazovka';
+  $('fullscreen-icon').setAttribute('d', active ? 'M3 9h6V3m6 0v6h6M9 21v-6H3m18 0h-6v6' : 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6');
+  clearInput();
+  canvas.focus({ preventScroll: true });
+}
+async function toggleFullscreen() {
+  if (fullscreenPending) return;
+  fullscreenPending = true;
+  try {
+    if (nativeFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      await exit.call(document);
+    } else if (fullscreenFallback) {
+      fullscreenFallback = false;
+    } else {
+      const request = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+      if (request) await request.call(document.documentElement);
+      else fullscreenFallback = true; // On mobile browsers without the API, use all available window space.
+    }
+    syncFullscreen();
+  } catch {
+    showNotice('Celou obrazovku prohlížeč nepovolil.', 3);
+  } finally { fullscreenPending = false; }
+}
+$('fullscreen-button').addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('webkitfullscreenchange', syncFullscreen);
 $('sound-button').addEventListener('click', async () => {
   soundEnabled = !soundEnabled;
   if (soundEnabled) {
@@ -112,6 +148,11 @@ $('help-dialog').addEventListener('click', (e) => { if (e.target === $('help-dia
 const gameKeys = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyQ', 'KeyE', 'KeyL']);
 window.addEventListener('keydown', (event) => {
   if ($('help-dialog').open || event.target instanceof HTMLInputElement) return;
+  if (event.code === 'KeyF' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); if (!event.repeat) toggleFullscreen(); return; }
+  if (event.code === 'Escape' && (nativeFullscreen() || fullscreenFallback)) {
+    if (fullscreenFallback && !event.repeat) { event.preventDefault(); toggleFullscreen(); }
+    return;
+  }
   if (event.code === 'Escape' || event.code === 'KeyP') { if (!event.repeat) togglePause(); return; }
   if (event.target instanceof HTMLButtonElement && !isPlaying()) return;
   if (gameKeys.has(event.code) && isPlaying()) {

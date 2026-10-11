@@ -15,13 +15,28 @@
 @media(max-width:520px){.header{padding:0 17px;height:62px}.brand{font-size:19px}.brand-ball{width:29px;height:29px;font-size:25px}.header-actions{gap:13px}.icon-button{font-size:10px}.layout{padding:12px 10px 0}.arena{border-radius:9px}.arena-top{padding:15px 17px 0;font-size:8px;letter-spacing:1px}.surface-label{font-size:7px}.scoreboard{min-width:0;width:calc(100% - 34px);padding:10px 12px;gap:10px;top:45px}.score-player{gap:7px}.player-name{font-size:9px}.score-player b{font-size:20px;min-width:24px}.score-player strong{font-size:13px}.canvas-wrap{height:calc(100dvh - 174px);min-height:470px;max-height:780px}.menu-card{padding:24px 22px 18px;max-width:340px;margin-top:38px}.menu-card h1{font-size:41px;margin:15px 0}.eyebrow{font-size:8px;letter-spacing:1.5px}.menu-card p{margin-bottom:18px;font-size:11px}.difficulty-picker button{font-size:11px;padding:10px 6px}.difficulty-picker small{font-size:8px}.primary-button{padding:14px 17px;font-size:12px}.menu-footnote{font-size:8px;margin-top:12px}.arena-bottom{padding:12px 14px;font-size:9px;min-height:50px}.small-button{font-size:9px}.arena-bottom>div{gap:4px}.court-footer{left:17px;right:17px;font-size:6px;letter-spacing:1.1px;bottom:13px}.page-footer{padding:14px 15px;font-size:6px;letter-spacing:1px}.game-notice{font-size:11px;top:63px;max-width:calc(100% - 24px);white-space:normal;min-width:210px}.compact h2{font-size:36px}.compact{padding:28px}dialog{padding:27px}}
 @media(pointer:coarse){body.playing .touch-controls{display:flex}}
 @media(prefers-reduced-motion:reduce){button,.game-notice{transition:none}}
+/* The game fills the screen while keeping score, pause and exit controls available. */
+.game-fullscreen body{height:100dvh;overflow:hidden;display:flex;flex-direction:column;background:var(--green)}
+.game-fullscreen .header{height:58px;min-height:58px;flex-shrink:0;max-width:none;width:100%;padding:0 24px;background:var(--paper)}
+.game-fullscreen .header-caption,.game-fullscreen .sidebar,.game-fullscreen .page-footer{display:none}
+.game-fullscreen .layout{display:flex;flex-direction:column;flex:1;min-height:0;max-width:none;width:100%;padding:0;margin:0;gap:0}
+.game-fullscreen .arena{display:flex;flex-direction:column;flex:1;min-height:0;border-radius:0}
+.game-fullscreen .arena-top{flex-shrink:0;padding-top:13px}
+.game-fullscreen .scoreboard{top:40px}
+.game-fullscreen .canvas-wrap{flex:1;height:auto;min-height:0;max-height:none}
+.game-fullscreen .arena-bottom{flex-shrink:0;min-height:46px;padding-top:10px;padding-bottom:10px}
+.game-fullscreen .overlay{overflow-y:auto;align-items:safe center;padding:12px 0}
+.game-fullscreen .menu-card{margin-top:25px;margin-bottom:10px}
+@media(max-width:600px){#fullscreen-label{display:none}.header-actions{gap:13px}.game-fullscreen .header{padding:0 17px}.game-fullscreen .scoreboard{top:33px}.game-fullscreen .menu-card{margin-top:30px}}
+@media(max-width:380px){#sound-label{display:none}}
+@media(max-height:500px){.game-fullscreen .header{height:44px;min-height:44px}.game-fullscreen .arena-top{padding-top:8px}.game-fullscreen .arena-bottom{min-height:35px;padding-top:5px;padding-bottom:5px}.game-fullscreen .scoreboard{top:27px;padding-top:5px;padding-bottom:5px}.game-fullscreen .menu-card{margin-top:50px}.game-fullscreen .game-notice{top:55px}}
 </style>
 </head>
 <body>
   <header class="header">
     <a class="brand" href="./" aria-label="Match Point, úvod"><span class="brand-ball" aria-hidden="true">◒</span><span>MATCH<span class="brand-light">POINT</span><span class="brand-dot">.</span></span></a>
     <span class="header-caption">MALÝ KURT. VELKÁ HRA.</span>
-    <div class="header-actions"><button id="sound-button" class="icon-button" aria-label="Zapnout zvuk" title="Zapnout zvuk"><span id="sound-icon">♪</span><span id="sound-label">Zvuk vypnutý</span></button><button id="help-button" class="icon-button help-button" aria-label="Jak hrát">?</button></div>
+    <div class="header-actions"><button id="fullscreen-button" class="icon-button" aria-label="Celá obrazovka" aria-pressed="false" title="Celá obrazovka (F)"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path id="fullscreen-icon" d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="fullscreen-label">Celá obrazovka</span></button><button id="sound-button" class="icon-button" aria-label="Zapnout zvuk" title="Zapnout zvuk"><span id="sound-icon">♪</span><span id="sound-label">Zvuk vypnutý</span></button><button id="help-button" class="icon-button help-button" aria-label="Jak hrát">?</button></div>
   </header>
   <main class="layout">
     <section class="arena" aria-label="Tenisový kurt">
@@ -64,7 +79,7 @@
     </aside>
   </main>
   <footer class="page-footer"><span>STVOŘENO PRO RADOST ZE HRY</span><span>Bez účtu. Bez reklam. <span class="footer-ball">●</span></span></footer>
-  <dialog id="help-dialog"><button id="close-help" class="dialog-close" aria-label="Zavřít">×</button><span class="eyebrow">PRVNÍ VÝMĚNA ZA MINUTU</span><h2>Jak na kurt.</h2><ol><li><strong>Pohybujte se k míčku.</strong> Šipky nebo WASD. Myší a prstem přidržte místo na své polovině kurtu.</li><li><strong>Podejte mezerníkem.</strong> Na mobilu tlačítkem ÚDER. S asistencí stačí být u míčku — základní úder se provede sám.</li><li><strong>Získejte výhodu.</strong> Q/E míří doleva/doprava. Mezerník podržte pro sílu a pusťte u míčku. L zahraje vysoký lob.</li><li><strong>Vyhrajte krátký set.</strong> Tenisové skóre 15, 30, 40, shoda a výhoda. Set do 4 her; při 3 : 3 tie-break do 7 bodů s rozdílem dvou.</li></ol><p>Esc nebo P pozastaví hru. Při opuštění okna se zápas pozastaví automaticky. Bez asistence úder načasujte mezerníkem u míčku.</p><button id="help-done" class="primary-button">Rozumím <span>→</span></button></dialog>
+  <dialog id="help-dialog"><button id="close-help" class="dialog-close" aria-label="Zavřít">×</button><span class="eyebrow">PRVNÍ VÝMĚNA ZA MINUTU</span><h2>Jak na kurt.</h2><ol><li><strong>Pohybujte se k míčku.</strong> Šipky nebo WASD. Myší a prstem přidržte místo na své polovině kurtu.</li><li><strong>Podejte mezerníkem.</strong> Na mobilu tlačítkem ÚDER. S asistencí stačí být u míčku — základní úder se provede sám.</li><li><strong>Získejte výhodu.</strong> Q/E míří doleva/doprava. Mezerník podržte pro sílu a pusťte u míčku. L zahraje vysoký lob.</li><li><strong>Vyhrajte krátký set.</strong> Tenisové skóre 15, 30, 40, shoda a výhoda. Set do 4 her; při 3 : 3 tie-break do 7 bodů s rozdílem dvou.</li></ol><p>F přepne celou obrazovku; Esc ji opustí. Mimo celou obrazovku Esc nebo P pozastaví hru. Při opuštění okna se zápas pozastaví automaticky. Bez asistence úder načasujte mezerníkem u míčku.</p><button id="help-done" class="primary-button">Rozumím <span>→</span></button></dialog>
   <script type="module">/** Deterministic, fixed-step tennis simulation. World units are metres. */
 const DIFFICULTIES = Object.freeze({
   casual: { label: 'Pohoda', description: 'Pomalejší soupeř, více času na každý úder.', speed: 4.35, reaction: 0.3, error: 0.9, shotSpeed: 12.8, reach: 1.25 },
@@ -537,6 +552,8 @@ let noticeTimer = 0, soundEnabled = false, audioContext;
 let lastTime = 0, accumulator = 0, frameCount = 0, fpsTime = 0, elapsed = 0;
 let previousPhase = 'menu';
 let helpPaused = false;
+let fullscreenFallback = false;
+let fullscreenPending = false;
 const effects = [];
 const game = new TennisGame({ difficulty, onEvent: onGameEvent });
 // A read-only-accessible game instance also makes reproducible browser diagnostics possible.
@@ -607,6 +624,40 @@ $('finish-menu').addEventListener('click', backToMenu);
 $('pause-button').addEventListener('click', togglePause);
 $('resume-button').addEventListener('click', togglePause);
 $('assist-toggle').addEventListener('change', () => { if (isPlaying()) canvas.focus({ preventScroll: true }); });
+function nativeFullscreen() { return document.fullscreenElement || document.webkitFullscreenElement; }
+function syncFullscreen() {
+  const active = Boolean(nativeFullscreen() || fullscreenFallback);
+  document.documentElement.classList.toggle('game-fullscreen', active);
+  $('fullscreen-button').setAttribute('aria-pressed', String(active));
+  $('fullscreen-button').setAttribute('aria-label', active ? 'Opustit celou obrazovku' : 'Celá obrazovka');
+  $('fullscreen-button').title = `${active ? 'Opustit celou obrazovku' : 'Celá obrazovka'} (F)`;
+  $('fullscreen-label').textContent = active ? 'Zmenšit' : 'Celá obrazovka';
+  $('fullscreen-icon').setAttribute('d', active ? 'M3 9h6V3m6 0v6h6M9 21v-6H3m18 0h-6v6' : 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6');
+  clearInput();
+  canvas.focus({ preventScroll: true });
+}
+async function toggleFullscreen() {
+  if (fullscreenPending) return;
+  fullscreenPending = true;
+  try {
+    if (nativeFullscreen()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      await exit.call(document);
+    } else if (fullscreenFallback) {
+      fullscreenFallback = false;
+    } else {
+      const request = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+      if (request) await request.call(document.documentElement);
+      else fullscreenFallback = true; // On mobile browsers without the API, use all available window space.
+    }
+    syncFullscreen();
+  } catch {
+    showNotice('Celou obrazovku prohlížeč nepovolil.', 3);
+  } finally { fullscreenPending = false; }
+}
+$('fullscreen-button').addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', syncFullscreen);
+document.addEventListener('webkitfullscreenchange', syncFullscreen);
 $('sound-button').addEventListener('click', async () => {
   soundEnabled = !soundEnabled;
   if (soundEnabled) {
@@ -636,6 +687,11 @@ $('help-dialog').addEventListener('click', (e) => { if (e.target === $('help-dia
 const gameKeys = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyQ', 'KeyE', 'KeyL']);
 window.addEventListener('keydown', (event) => {
   if ($('help-dialog').open || event.target instanceof HTMLInputElement) return;
+  if (event.code === 'KeyF' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); if (!event.repeat) toggleFullscreen(); return; }
+  if (event.code === 'Escape' && (nativeFullscreen() || fullscreenFallback)) {
+    if (fullscreenFallback && !event.repeat) { event.preventDefault(); toggleFullscreen(); }
+    return;
+  }
   if (event.code === 'Escape' || event.code === 'KeyP') { if (!event.repeat) togglePause(); return; }
   if (event.target instanceof HTMLButtonElement && !isPlaying()) return;
   if (gameKeys.has(event.code) && isPlaying()) {
