@@ -14,14 +14,16 @@ Při vývoji `npm run build` sestaví aktuální verzi do `_site/play.html`; `np
 
 | Akce | Klávesnice | Myš / telefon |
 | --- | --- | --- |
-| Pohyb | Šipky nebo WASD | Přidržet místo na vlastní polovině kurtu |
+| Pohyb | Šipky nebo WASD | Levý ovladač POHYB v blízkém pohledu / přidržet místo na kurtu |
 | Podání | Mezerník | Kliknout na kurt / ÚDER |
 | Silnější úder | Podržet mezerník a pustit u míčku | Podržet a pustit ÚDER |
 | Směr úderu | Q doleva, E doprava | Směr místa, kam vedete hráče |
 | Vysoký lob | L | LOB |
-| Kamera: celý kurt / za hráčem | C | Tlačítko kamery pod kurtem |
+| Kamera: za hlavou / první osoba / celý kurt | C | Tlačítko kamery pod kurtem |
 | Pauza / pokračovat | Esc nebo P | Tlačítko Pauza |
 | Celá obrazovka / zpět | F; Esc pro návrat | Tlačítko Celá obrazovka / Zmenšit |
+
+Hra začíná pohledem těsně za hlavou hráče. Kamera sleduje jeho pohyb po kurtu. Klávesa C nebo tlačítko kamery přepne do první osoby a potom na přehled celého kurtu. V první osobě vlastní postava nezakrývá výhled. Šipka upozorní na příchozí míček mimo záběr.
 
 Asistence automaticky načasuje základní úder, když hráč stojí blízko míčku. Lze ji vypnout na bočním panelu. Pro silný úder podržte mezerník a pusťte jej u míčku; během nabíjení hráč čeká na vaše puštění. Pohyb a správná pozice zůstávají na vás. Bez určeného směru hráč míří do volného prostoru. Tři obtížnosti mění rychlost, reakce a přesnost soupeře; soupeř běhá podle stejné fyziky, bez teleportování. Asistence ukazuje i předpokládané místo dopadu míčku. Opuštění okna automaticky pozastaví zápas.
 
@@ -44,7 +46,7 @@ Pro automatické ověření prohlížeče: Python s balíčkem Playwright a Chro
 
 `game.js` obsahuje simulaci v pevných krocích 120 Hz, `renderer3d.js` scénu a perspektivní kamery v Three.js, `app.js` ovládání a rozhraní. Dotykové i myší souřadnice se určují průsečíkem paprsku kamery s kurtem. `build.js` sestaví veškerý JavaScript do `bundle.js`; `npm run export` aktualizuje i tento přiložený bundle a samostatný `play.html`, aby fungovalo hostování přímo z větve `main` a hraní offline. Po úpravách kódu před publikací spusťte `npm run export`.
 
-Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, modely, textura kurtu a zvuky jsou lokální; hra za běhu nevolá externí servery. Oznámení licence Three.js je v `THIRD_PARTY_NOTICES.txt` a uvnitř bundlu. Testy prohlížeče ověřují skutečné WebGL vykreslování, obě kamery, fullscreen, výměny, skóre i mobilní ovládání; software WebGL v testech není měřením výkonu skutečného telefonu.
+Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, modely, textura kurtu a zvuky jsou lokální; hra za běhu nevolá externí servery. Oznámení licence Three.js je v `THIRD_PARTY_NOTICES.txt` a uvnitř bundlu. Testy prohlížeče ověřují skutečné WebGL vykreslování, všechny tři kamery, fullscreen, výměny, skóre i mobilní ovládání; software WebGL v testech není měřením výkonu skutečného telefonu.
 
 ## Zveřejnění na GitHub Pages
 

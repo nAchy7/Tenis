@@ -20,9 +20,9 @@ await writeFile(path.join(output, 'THIRD_PARTY_NOTICES.txt'), license);
 const [html, css, favicon] = await Promise.all(['index.html', 'style.css', 'favicon.svg'].map((name) => readFile(path.join(root, name), 'utf8')));
 // The standalone version also works from disk without a server or Internet connection.
 const standalone = html
-  .replace('<link rel="stylesheet" href="./style.css">', () => `<style>${css}</style>`)
+  .replace(/<link rel="stylesheet" href="\.\/style\.css(?:\?[^\"]*)?">/, () => `<style>${css}</style>`)
   .replace('href="./favicon.svg"', () => `href="data:image/svg+xml,${encodeURIComponent(favicon)}"`)
-  .replace('<script defer src="./bundle.js"></script>', () => `<script>${bundle.replace(/<\/script/gi, '<\\/script')}</script>`);
+  .replace(/<script defer src="\.\/bundle\.js(?:\?[^\"]*)?"><\/script>/, () => `<script>${bundle.replace(/<\/script/gi, '<\\/script')}</script>`);
 await writeFile(path.join(output, 'play.html'), standalone);
 if (process.argv.includes('--portable')) {
   await writeFile(path.join(root, 'play.html'), standalone);

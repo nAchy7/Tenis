@@ -69,7 +69,9 @@ class Instances {
 export class TennisRenderer {
   constructor(canvas) {
     this.canvas = canvas;
-    this.width = 1; this.height = 1; this.mode = 'court'; this.clock = 0;
+    this.width = 1; this.height = 1; this.mode = 'player'; this.clock = 0;
+    this.modes = Object.freeze(['player', 'first-person', 'court']);
+    this.cameraInfo = { eyeHeight: 2.12, followDistance: 1.45, behindDistance: 1.35, target: null };
     this.renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -86,7 +88,8 @@ export class TennisRenderer {
     this.projectVector = new THREE.Vector3();
     this.materials = []; this.textures = [];
     this.events = []; this.contacts = { human: null, ai: null };
-    this.lastStateTime = -1; this.cameraReady = false;
+    this.lastStateTime = -1; this.cameraReady = false; this.lastState = null;
+    this.cameraYaw = null; this.cameraPitch = null;
     this._createLights(); this._createArena(); this._createPlayers(); this._createBallAndGuides();
     this.resize(canvas.clientWidth || 900, canvas.clientHeight || 650, window.devicePixelRatio || 1);
   }
@@ -331,18 +334,66 @@ export class TennisRenderer {
     this.renderer.setSize(this.width, this.height, false);
     this.camera.aspect = this.width / this.height;
     this.sun.shadow.mapSize.set(portrait ? 1024 : 1536, portrait ? 1024 : 1536);
-    this.cameraReady = false; this._updateCamera(null, 1);
+    this.cameraReady = false; this._updateCamera(this.lastState, 1);
   }
 
-  setCamera(mode) { if (mode === 'court' || mode === 'player') this.mode = mode; }
+  setCamera(mode) {
+    if (!this.modes.includes(mode) || mode === this.mode) return;
+    this.mode = mode; this.cameraReady = false; this.cameraYaw = null; this.cameraPitch = null;
+  }
 
   _updateCamera(state, dt) {
-    const closer = this.mode === 'player';
-    const human = state?.players?.human;
-    const target = new THREE.Vector3(closer && human ? human.x * .08 : 0, .65, closer ? -.9 : .6);
-    const direction = new THREE.Vector3(0, closer ? .49 : .68, closer ? .872 : .733).normalize();
+    const human = state?.players?.human || { x: 0, y: 10.5 };
+    if (this.mode !== 'court') {
+      const firstPerson = this.mode === 'first-person';
+      const eyeHeight = firstPerson ? 1.67 : 2.12;
+      const behind = firstPerson ? -.04 : 1.35;
+      const shoulder = firstPerson ? 0 : .52;
+      // A fixed eye/shoulder offset follows every step without artificial head bob
+      // or a delayed chase that could leave the camera outside the player's body.
+      this.camera.position.set(human.x + shoulder, eyeHeight, human.y + behind);
+      this.camera.fov = clamp(64 + Math.max(0, 1 - this.camera.aspect) * 64, 64, 96);
+      this.camera.near = .06;
+      const target = new THREE.Vector3(human.x * .35, 1.05, -7.5);
+      const ball = state?.ball;
+      if (ball?.inPlay && state.phase === 'rally') {
+        const ballTarget = toWorld(ball);
+        // A slight look ahead keeps the incoming arc readable. At contact the
+        // camera follows the ball itself; it never turns completely backwards.
+        const incoming = ball.lastHitter === 'ai';
+        if (incoming && ball.y < human.y - 3) {
+          ballTarget.x += (ball.vx || 0) * .055;
+          ballTarget.z += (ball.vy || 0) * .055;
+        }
+        target.lerp(ballTarget, incoming ? .98 : .86);
+      } else if (state?.phase === 'serve' && state.server === 'human') {
+        // Looking a little downward places the held serve ball in the lower
+        // foreground while preserving the receiver and the far court.
+        target.set(human.x * .5, .85, -5);
+      }
+      const direction = target.clone().sub(this.camera.position);
+      const horizontal = Math.hypot(direction.x, direction.z);
+      const desiredYaw = clamp(Math.atan2(direction.x, -direction.z), -Math.PI * .36, Math.PI * .36);
+      const desiredPitch = clamp(Math.atan2(direction.y, Math.max(.1, horizontal)), -.52, .66);
+      const orientationBlend = !this.cameraReady || this.cameraYaw === null ? 1 : 1 - Math.exp(-Math.max(0, dt) * 12);
+      this.cameraYaw = this.cameraYaw === null ? desiredYaw : THREE.MathUtils.lerp(this.cameraYaw, desiredYaw, orientationBlend);
+      this.cameraPitch = this.cameraPitch === null ? desiredPitch : THREE.MathUtils.lerp(this.cameraPitch, desiredPitch, orientationBlend);
+      const cosine = Math.cos(this.cameraPitch);
+      const look = new THREE.Vector3(Math.sin(this.cameraYaw) * cosine, Math.sin(this.cameraPitch), -Math.cos(this.cameraYaw) * cosine);
+      const lookTarget = this.camera.position.clone().addScaledVector(look, 10);
+      this.camera.lookAt(lookTarget); this.camera.updateProjectionMatrix(); this.camera.updateMatrixWorld();
+      this.cameraInfo = { eyeHeight, followDistance: Math.hypot(shoulder, behind), behindDistance: behind,
+        headDistance: this.camera.position.distanceTo(new THREE.Vector3(human.x, 1.77, human.y)),
+        target: { x: lookTarget.x, y: lookTarget.z, z: lookTarget.y }, yaw: this.cameraYaw, pitch: this.cameraPitch };
+      this.cameraReady = true;
+      return;
+    }
+    // The overview remains available explicitly. Only this mode fits all court
+    // corners; the two immersive views stay physically close to the player.
+    const target = new THREE.Vector3(0, .65, .6);
+    const direction = new THREE.Vector3(0, .68, .733).normalize();
     const up = new THREE.Vector3(0, direction.z, -direction.y);
-    this.camera.fov = closer ? 51 : 43;
+    this.camera.fov = 43; this.camera.near = .1;
     const tangent = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
     let distance = 25;
     // Fit the entire playable area, including a standing player at either baseline.
@@ -355,19 +406,24 @@ export class TennisRenderer {
     const blend = this.cameraReady ? 1 - Math.exp(-Math.max(0, dt) * 7) : 1;
     this.camera.position.lerp(destination, blend);
     this.camera.lookAt(target); this.camera.updateProjectionMatrix(); this.camera.updateMatrixWorld();
+    this.cameraInfo = { eyeHeight: this.camera.position.y, followDistance: Math.hypot(this.camera.position.x - human.x, this.camera.position.z - human.y),
+      behindDistance: this.camera.position.z - human.y, target: { x: target.x, y: target.z, z: target.y } };
     this.cameraReady = true;
   }
 
   project(x, y, z = 0) {
-    this.projectVector.set(x, z, y).project(this.camera);
-    return { x: (this.projectVector.x + 1) * this.width / 2, y: (1 - this.projectVector.y) * this.height / 2 };
+    this.projectVector.set(x, z, y);
+    const inFront = this.projectVector.clone().applyMatrix4(this.camera.matrixWorldInverse).z < -this.camera.near;
+    this.projectVector.project(this.camera);
+    return { x: (this.projectVector.x + 1) * this.width / 2, y: (1 - this.projectVector.y) * this.height / 2,
+      inFront, visible: inFront && Math.abs(this.projectVector.x) <= 1 && Math.abs(this.projectVector.y) <= 1 && Math.abs(this.projectVector.z) <= 1 };
   }
 
   unproject(pixelX, pixelY) {
     this.pointerVector.set(pixelX / this.width * 2 - 1, 1 - pixelY / this.height * 2);
     this.raycaster.setFromCamera(this.pointerVector, this.camera);
     const result = this.raycaster.ray.intersectPlane(this.groundPlane, new THREE.Vector3());
-    return result ? { x: result.x, y: result.z } : { x: 0, y: 13.4 };
+    return result ? { x: result.x, y: result.z } : null;
   }
 
   handleEvent(event, state) {
@@ -391,6 +447,9 @@ export class TennisRenderer {
       model.step += dt * speed * 3.8;
       const swing = p.swing || 0, bob = Math.abs(Math.sin(model.step)) * .055 * moving;
       root.position.set(p.x, bob, p.y); root.rotation.y = side === 'ai' ? Math.PI : 0; root.updateMatrixWorld(true);
+      const hidden = side === 'human' && this.mode === 'first-person';
+      root.visible = !hidden; model.racket.visible = !hidden; this.playerShadows[side].visible = !hidden;
+      if (hidden) continue;
       const local = (x, y, z) => root.localToWorld(new THREE.Vector3(x, y, z));
       const quaternion = root.quaternion;
       const legSign = side === 'ai' ? -1 : 1;
@@ -449,14 +508,16 @@ export class TennisRenderer {
 
   render(state, dt = 1 / 60, { assist = true, pointer = null, aim = 0 } = {}) {
     dt = Math.min(.1, Math.max(0, dt)); this.clock += dt;
-    if (state.time < this.lastStateTime) { this.contacts = { human: null, ai: null }; for (const e of this.effects) { e.active = false; e.ring.visible = false; } }
-    this.lastStateTime = state.time;
+    if (state.time < this.lastStateTime) { this.contacts = { human: null, ai: null }; this.cameraReady = false; for (const e of this.effects) { e.active = false; e.ring.visible = false; } }
+    this.lastStateTime = state.time; this.lastState = state;
     this._updateCamera(state, dt); this._animatePlayers(state, ['paused', 'menu', 'finished'].includes(state.phase) ? 0 : dt);
     const b = state.ball;
     this.ball.position.set(b.x, Math.max(.13, b.z), b.y);
     const cameraDistance = this.camera.position.distanceTo(this.ball.position);
     const screenRadius = .13 * this.height / (2 * cameraDistance * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
-    const ballScale = clamp(3.1 / Math.max(screenRadius, .1), 1, 1.9);
+    // Overview exaggerates the tennis ball slightly. Up close it approaches
+    // physical size, so an eye-level serve cannot fill the entire screen.
+    const ballScale = clamp(3.1 / Math.max(screenRadius, .1), this.mode === 'court' ? 1 : .33, 1.9);
     this.ball.scale.setScalar(ballScale); this.ball.position.y = Math.max(.13 * ballScale, b.z);
     this.ball.rotation.set(state.time * 3.1, state.time * 2.6, state.time * 1.1);
     const shadowScale = .37 + Math.max(0, b.z) * .045;
@@ -468,7 +529,7 @@ export class TennisRenderer {
     }
     this.trail.finish();
     const human = state.players.human;
-    this.humanRing.position.set(human.x, .056, human.y); this.humanRing.visible = state.phase !== 'menu';
+    this.humanRing.position.set(human.x, .056, human.y); this.humanRing.visible = state.phase !== 'menu' && this.mode !== 'first-person';
     this.landingRing.visible = Boolean(assist && state.phase === 'rally' && b.inPlay && b.lastHitter === 'ai');
     if (this.landingRing.visible) {
       const time = (b.vz + Math.sqrt(b.vz * b.vz + 2 * 9.81 * Math.max(0, b.z - .033))) / 9.81;

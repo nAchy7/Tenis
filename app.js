@@ -6,6 +6,7 @@ const canvas = $('court');
 const wrapper = $('canvas-wrap');
 const keys = new Set();
 const pointer = { active: false, x: 0, y: 0 };
+const touchMove = { active: false, x: 0, y: 0 };
 let width = 900, height = 650, pixelRatio = 1;
 let difficulty = 'club';
 let hitEdge = false, hitRelease = false, touchHeld = false, touchLob = false;
@@ -58,7 +59,7 @@ function playSound(frequency, duration, type, volume) {
   oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
 }
 
-function clearInput() { keys.clear(); pointer.active = false; hitEdge = false; hitRelease = false; touchHeld = false; touchLob = false; }
+function clearInput() { keys.clear(); pointer.active = false; resetTouchMove(); hitEdge = false; hitRelease = false; touchHeld = false; touchLob = false; }
 function isPlaying() { return ['serve', 'rally', 'point'].includes(game.state.phase); }
 function togglePause() {
   if (!graphicsReady) return;
@@ -93,12 +94,16 @@ $('finish-menu').addEventListener('click', backToMenu);
 $('pause-button').addEventListener('click', togglePause);
 $('resume-button').addEventListener('click', togglePause);
 $('assist-toggle').addEventListener('change', () => { if (isPlaying()) canvas.focus({ preventScroll: true }); });
+const cameraModes = ['player', 'first-person', 'court'];
+const cameraLabels = { player: 'Za hlavou', 'first-person': 'První osoba', court: 'Celý kurt' };
 function toggleCamera() {
   if (!renderer || !graphicsReady) return;
-  renderer.setCamera(renderer.mode === 'court' ? 'player' : 'court');
-  $('camera-label').textContent = renderer.mode === 'court' ? 'Celý kurt' : 'Za hráčem';
-  $('camera-button').setAttribute('aria-label', `Kamera: ${renderer.mode === 'court' ? 'celý kurt' : 'za hráčem'}. Přepnout kameru.`);
-  pointer.active = false; canvas.focus({ preventScroll: true });
+  renderer.setCamera(cameraModes[(cameraModes.indexOf(renderer.mode) + 1) % cameraModes.length]);
+  $('camera-label').textContent = cameraLabels[renderer.mode];
+  $('camera-button').setAttribute('aria-label', `Kamera: ${cameraLabels[renderer.mode].toLocaleLowerCase('cs')}. Přepnout kameru.`);
+  pointer.active = false;
+  if (renderer.mode === 'court') resetTouchMove();
+  canvas.focus({ preventScroll: true }); syncUI();
 }
 $('camera-button').addEventListener('click', toggleCamera);
 $('webgl-retry').addEventListener('click', () => location.reload());
@@ -197,17 +202,18 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && isP
 function pointerPosition(event) {
   const r = canvas.getBoundingClientRect();
   const p = renderer?.unproject(event.clientX - r.left, event.clientY - r.top);
-  if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return;
+  if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) return false;
   pointer.x = Math.max(-5.9, Math.min(5.9, p.x));
   pointer.y = Math.max(.9, Math.min(13.4, p.y));
+  return true;
 }
 canvas.addEventListener('pointerdown', (event) => {
   if (!isPlaying() || event.button > 0) return;
   event.preventDefault(); canvas.focus({ preventScroll: true });
-  canvas.setPointerCapture(event.pointerId); pointer.active = true; pointerPosition(event);
+  canvas.setPointerCapture(event.pointerId); pointer.active = pointerPosition(event);
   if (game.state.phase === 'serve' && game.state.server === 'human') hitEdge = true;
 });
-canvas.addEventListener('pointermove', (event) => { if (pointer.active) pointerPosition(event); });
+canvas.addEventListener('pointermove', (event) => { if (canvas.hasPointerCapture(event.pointerId)) pointer.active = pointerPosition(event); });
 canvas.addEventListener('pointerup', () => { pointer.active = false; });
 canvas.addEventListener('pointercancel', () => { pointer.active = false; });
 canvas.addEventListener('contextmenu', (event) => event.preventDefault());
@@ -218,12 +224,34 @@ function wireTouchButton(id, lob = false) {
   button.addEventListener('pointerup', release); button.addEventListener('pointercancel', release); button.addEventListener('lostpointercapture', release);
 }
 wireTouchButton('touch-hit'); wireTouchButton('touch-lob', true);
+function resetTouchMove() {
+  touchMove.active = false; touchMove.x = 0; touchMove.y = 0;
+  $('touch-move').style.setProperty('--stick-x', '0px');
+  $('touch-move').style.setProperty('--stick-y', '0px');
+}
+function moveTouchStick(event) {
+  const box = $('touch-move').getBoundingClientRect();
+  const dx = (event.clientX - box.left - box.width / 2) / 24;
+  const dy = (event.clientY - box.top - box.height / 2) / 24;
+  const length = Math.hypot(dx, dy), scale = Math.max(1, length);
+  touchMove.x = length > .12 ? dx / scale : 0;
+  touchMove.y = length > .12 ? dy / scale : 0;
+  $('touch-move').style.setProperty('--stick-x', `${touchMove.x * 24}px`);
+  $('touch-move').style.setProperty('--stick-y', `${touchMove.y * 24}px`);
+}
+$('touch-move').addEventListener('pointerdown', (event) => {
+  if (!isPlaying()) return;
+  event.preventDefault(); $('touch-move').setPointerCapture(event.pointerId);
+  touchMove.active = true; pointer.active = false; moveTouchStick(event);
+});
+$('touch-move').addEventListener('pointermove', (event) => { if (touchMove.active) moveTouchStick(event); });
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) $('touch-move').addEventListener(type, resetTouchMove);
 
 function readInput() {
-  const moveX = Number(keys.has('ArrowRight') || keys.has('KeyD')) - Number(keys.has('ArrowLeft') || keys.has('KeyA'));
-  const moveY = Number(keys.has('ArrowDown') || keys.has('KeyS')) - Number(keys.has('ArrowUp') || keys.has('KeyW'));
+  const moveX = Number(keys.has('ArrowRight') || keys.has('KeyD')) - Number(keys.has('ArrowLeft') || keys.has('KeyA')) || touchMove.x;
+  const moveY = Number(keys.has('ArrowDown') || keys.has('KeyS')) - Number(keys.has('ArrowUp') || keys.has('KeyW')) || touchMove.y;
   const aimKey = Number(keys.has('KeyE')) - Number(keys.has('KeyQ'));
-  return { moveX, moveY, targetX: pointer.x, targetY: pointer.y, pointerMove: pointer.active, hit: hitEdge, hitHeld: keys.has('Space') || touchHeld, hitReleased: hitRelease, aim: aimKey || (pointer.active ? Math.max(-1, Math.min(1, pointer.x / 4.1)) : moveX * .75), lob: keys.has('KeyL') || touchLob, assist: $('assist-toggle').checked };
+  return { moveX, moveY, targetX: pointer.x, targetY: pointer.y, pointerMove: pointer.active && !touchMove.active, hit: hitEdge, hitHeld: keys.has('Space') || touchHeld, hitReleased: hitRelease, aim: aimKey || (pointer.active ? Math.max(-1, Math.min(1, pointer.x / 4.1)) : moveX * .75), lob: keys.has('KeyL') || touchLob, assist: $('assist-toggle').checked };
 }
 
 function pointLabel(side) {
@@ -238,6 +266,7 @@ function syncUI() {
   $('pause-overlay').classList.toggle('hidden', s.phase !== 'paused');
   $('finish-overlay').classList.toggle('hidden', s.phase !== 'finished');
   document.body.classList.toggle('playing', isPlaying());
+  document.body.classList.toggle('camera-near', Boolean(renderer && renderer.mode !== 'court'));
   $('pause-button').disabled = !isPlaying();
   $('resume-button').disabled = !graphicsReady;
   $('camera-button').disabled = !graphicsReady;
@@ -286,6 +315,19 @@ function render(dt) {
   const charge = game.state.players.human.charge || 0;
   $('power-meter').style.setProperty('--charge', `${Math.round(charge * 100)}%`);
   $('power-meter').classList.toggle('charging', charge > .08 && isPlaying());
+  const ball = game.state.ball;
+  const screen = renderer.project(ball.x, ball.y, ball.z);
+  const cue = $('ball-cue');
+  const showCue = renderer.mode !== 'court' && game.state.phase === 'rally'
+    && ball.inPlay && ball.lastHitter === 'ai' && !screen.visible;
+  cue.classList.toggle('hidden', !showCue);
+  if (showCue) {
+    const behind = !screen.inFront;
+    const left = !behind && screen.x < 0, right = !behind && screen.x > width;
+    cue.textContent = behind ? '↶ Míček za vámi' : left ? '← Míček' : right ? 'Míček →' : screen.y < 0 ? '↑ Míček' : '↓ Míček';
+    cue.style.left = `${left ? 50 : right ? width - 50 : width / 2}px`;
+    cue.style.top = `${behind ? height - 90 : Math.max(100, Math.min(height - 95, screen.y))}px`;
+  }
 }
 
 function frame(time) {

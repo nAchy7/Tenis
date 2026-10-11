@@ -25,6 +25,11 @@
 /* 3D match controls stay readable over the stadium. */
 .brand-version{font-size:9px;letter-spacing:1px;border:1px solid #97ad4255;border-radius:4px;padding:3px 4px;margin-left:7px;vertical-align:middle;color:#78903b}
 #camera-button{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.ball-cue{position:absolute;z-index:3;transform:translate(-50%,-50%);pointer-events:none;background:#12372de8;border:1px solid #dfea8577;border-radius:6px;padding:8px 10px;color:#f0f6c7;font-size:11px;white-space:nowrap}
+.touch-move{display:none;position:absolute;z-index:3;left:18px;bottom:35px;width:80px;height:80px;border:1px solid #c9dfb38c;border-radius:50%;background:#153c30b8;color:#e5ecd3;touch-action:none;padding:0}
+.touch-move>span{position:absolute;width:30px;height:30px;left:50%;top:50%;border:1px solid #e3eeadba;background:#d7e79b70;border-radius:50%;transform:translate(calc(-50% + var(--stick-x,0px)),calc(-50% + var(--stick-y,0px)))}
+.touch-move>small{position:absolute;bottom:7px;left:0;width:100%;font-size:7px;letter-spacing:1px;pointer-events:none}
+@media(pointer:coarse){body.playing.camera-near .touch-move{display:block}}
 .layout{align-items:start}.game-fullscreen .layout{align-items:stretch}
 .arena-bottom{gap:10px}.arena-bottom>div{flex-shrink:0}#status-line{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .power-meter{position:absolute;bottom:49px;left:50%;transform:translateX(-50%);width:116px;pointer-events:none;z-index:3;opacity:0;transition:opacity .15s;padding:9px 12px;background:#12372ddb;border:1px solid #c9e39444;border-radius:5px}

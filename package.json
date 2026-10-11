@@ -1,6 +1,6 @@
 {
   "name": "match-point-tenis",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "Plně hratelný 3D tenis pro jednoho hráče proti počítači.",
