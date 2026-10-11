@@ -13,7 +13,7 @@ const other = (side) => side === 'human' ? 'ai' : 'human';
 const index = (side) => side === 'human' ? 0 : 1;
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 const approach = (value, goal, amount) => value < goal ? Math.min(goal, value + amount) : Math.max(goal, value - amount);
-const blankPlayer = (side) => ({ x: 0, y: side === 'human' ? 10.5 : -10.5, vx: 0, vy: 0, swing: 0, swingSide: 1, reach: side === 'human' ? 2.05 : 1.8, energy: 1, charge: 0 });
+const blankPlayer = (side) => ({ x: 0, y: side === 'human' ? 10.5 : -10.5, vx: 0, vy: 0, swing: 0, swingSide: 1, swingContact: null, lastShotPower: 0, reach: side === 'human' ? 2.05 : 1.8, energy: 1, charge: 0 });
 
 export class TennisGame {
   constructor({ difficulty = 'club', onEvent = () => {}, random = Math.random } = {}) {
@@ -36,6 +36,7 @@ export class TennisGame {
     };
     this._accumulator = 0;
     this._hitBuffer = 0;
+    this._bufferedLob = false;
     this._swingCooldown = { human: 0, ai: 0 };
     this._aiReaction = 0;
     this._aiRefresh = 0;
@@ -67,6 +68,8 @@ export class TennisGame {
       this.state.phase = 'paused';
       this._accumulator = 0;
       this._hitBuffer = 0;
+      this._bufferedLob = false;
+      this.state.players.human.charge = 0;
     }
   }
 
@@ -79,7 +82,10 @@ export class TennisGame {
 
   update(dt, input = {}) {
     if (!Number.isFinite(dt) || dt <= 0 || ['menu', 'paused', 'finished'].includes(this.state.phase)) return;
-    if (input.hit || input.hitReleased) this._hitBuffer = 0.23;
+    if (input.hit || input.hitReleased) {
+      this._hitBuffer = 0.23;
+      this._bufferedLob = Boolean(input.lob);
+    }
     // Short stalls are simulated; long background-tab stalls cannot advance an entire match.
     this._accumulator += Math.min(dt, 0.25);
     while (this._accumulator + 1e-10 >= STEP) {
@@ -127,8 +133,10 @@ export class TennisGame {
     const ball = s.ball;
     if (ball.lastHitter !== 'human' && ball.y > 0 && this._swingCooldown.human <= 0) {
       const automatic = input.assist !== false;
-      const wantsHit = this._hitBuffer > 0 || automatic;
-      if (wantsHit && this._canHit('human', automatic)) this._strike('human', input);
+      // Holding the strike button commits to a charged shot. Assistance must
+      // wait for release rather than spending the charge at the first contact.
+      const wantsHit = !input.hitHeld && (this._hitBuffer > 0 || automatic);
+      if (wantsHit && this._canHit('human', automatic && this._hitBuffer <= 0)) this._strike('human', { ...input, lob: input.lob || (this._hitBuffer > 0 && this._bufferedLob) });
     }
     if (ball.lastHitter !== 'ai' && ball.y < 0 && this._swingCooldown.ai <= 0 && this._aiReaction <= 0 && this._canHit('ai', true)) this._strike('ai');
 
@@ -212,6 +220,7 @@ export class TennisGame {
     const ball = { ...this.state.ball };
     const p = this.state.players[side];
     const direction = side === 'human' ? 1 : -1;
+    const speed = side === 'human' ? 6.15 : DIFFICULTIES[this.difficulty].speed;
     let fallback = { x: ball.x, y: direction * 10 };
     // Prediction uses the same gravity and bounce rules as the live ball.
     for (let time = 0; time < 3.8; time += 0.025) {
@@ -229,9 +238,9 @@ export class TennisGame {
       }
       if (ball.y * direction > 3 && ball.y * direction < 13.2) {
         fallback = { x: ball.x, y: ball.y };
-        const available = DIFFICULTIES[this.difficulty].speed * Math.max(0, time - 0.05) + p.reach * 0.65;
+        const available = speed * Math.max(0, time - 0.05) + p.reach * 0.65;
         const distance = Math.hypot(ball.x - p.x, ball.y - p.y);
-        if (ball.z >= 0.45 && ball.z <= 1.65 && distance <= available) return fallback;
+        if ((!this._serveShot || ball.bounces > 0) && ball.z >= 0.45 && ball.z <= 1.65 && distance <= available) return fallback;
       }
     }
     return fallback;
@@ -241,6 +250,8 @@ export class TennisGame {
     const p = this.state.players[side];
     const b = this.state.ball;
     if (!b.inPlay || b.lastHitter === side || b.z < 0.2 || b.z > (automatic ? 1.8 : 2.7)) return false;
+    // A serve must land in its service box before the receiver may strike it.
+    if (this._serveShot && b.bounces === 0) return false;
     const reach = p.reach + (automatic ? 0 : 0.16);
     // The racket reaches farther sideways than behind the player.
     return Math.hypot((b.x - p.x) * 0.92, (b.y - p.y) * 1.12) <= reach;
@@ -262,6 +273,8 @@ export class TennisGame {
     this._swingCooldown[side] = 0.4;
     p.swing = 1;
     p.swingSide = targetX > p.x ? 1 : -1;
+    p.swingContact = { x: s.ball.x, y: s.ball.y, z: s.ball.z };
+    p.lastShotPower = 0.55;
     p.charge = 0;
     s.phase = 'rally';
     s.rally = 1;
@@ -270,7 +283,7 @@ export class TennisGame {
     s.lastMessage = side === 'human' ? 'Podání. Najdi si místo pro další úder.' : 'Soupeř podává. Připrav se.';
     this._onIncoming(side);
     this._emit('serve', { side, message: s.lastMessage });
-    this._emit('hit', { side, power: 0.55, serve: true });
+    this._emit('hit', { side, power: 0.55, serve: true, contact: { ...p.swingContact } });
   }
 
   _strike(side, input = {}) {
@@ -304,9 +317,12 @@ export class TennisGame {
     this._serveShot = false;
     p.swing = 1;
     p.swingSide = s.ball.x > p.x ? 1 : -1;
+    p.swingContact = { x: s.ball.x, y: s.ball.y, z: s.ball.z };
+    p.lastShotPower = power;
     p.charge = 0;
     this._swingCooldown[side] = 0.32;
     this._hitBuffer = 0;
+    this._bufferedLob = false;
     s.rally++;
     s.bestRally = Math.max(s.bestRally, s.rally);
     s.stats.longestRally = s.bestRally;
@@ -314,7 +330,7 @@ export class TennisGame {
     s.stats[side === 'human' ? 'humanShots' : 'aiShots']++;
     s.lastMessage = input.lob ? 'Lob. Vrať se do dobré pozice.' : power > 0.65 ? 'Silný úder!' : s.rally > 5 ? 'Dobrá výměna. Drž se!' : 'Hledej volný prostor.';
     this._onIncoming(side);
-    this._emit('hit', { side, power, lob: Boolean(input.lob) });
+    this._emit('hit', { side, power, lob: Boolean(input.lob), contact: { ...p.swingContact } });
   }
 
   _launch(targetX, targetY, flight) {
@@ -394,12 +410,13 @@ export class TennisGame {
     s.rally = 0;
     const deuce = (s.score.points[0] + s.score.points[1]) % 2 === 0;
     const sign = deuce ? 1 : -1;
-    Object.assign(s.players.human, { x: s.server === 'human' ? 1.25 * sign : -1.15 * sign, y: 12.3, vx: 0, vy: 0, charge: 0 });
-    Object.assign(s.players.ai, { x: s.server === 'ai' ? -1.25 * sign : 1.15 * sign, y: -12.3, vx: 0, vy: 0, charge: 0 });
+    Object.assign(s.players.human, { x: s.server === 'human' ? 1.25 * sign : 1.15 * sign, y: 12.3, vx: 0, vy: 0, charge: 0 });
+    Object.assign(s.players.ai, { x: s.server === 'ai' ? -1.25 * sign : -1.15 * sign, y: -12.3, vx: 0, vy: 0, charge: 0 });
     const p = s.players[s.server];
     Object.assign(s.ball, { x: p.x, y: p.y + (s.server === 'human' ? -0.38 : 0.38), z: 1.5, vx: 0, vy: 0, vz: 0, inPlay: false, bounces: 0, lastHitter: null, trail: [] });
     s.lastMessage = s.server === 'human' ? 'Podáváš. Stiskni mezerník nebo tlačítko úderu.' : 'Podává soupeř. Připrav se na příjem.';
     this._hitBuffer = 0;
+    this._bufferedLob = false;
     this._aiTarget = { x: s.players.ai.x, y: s.players.ai.y };
     this._aiReaction = 0;
   }

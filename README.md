@@ -1,6 +1,6 @@
-# Match Point
+# Match Point 3D
 
-Tenis pro jednoho hráče proti počítači. Plynulá Canvas hra v češtině, která běží na počítači i telefonu bez účtu, reklam nebo externích knihoven.
+Plně hratelný 3D tenis pro jednoho hráče proti počítači. Prostorový antukový kurt, animovaní hráči a rakety, letící míček, stíny a stadion. Hra v češtině běží na počítači i telefonu bez účtu nebo reklam. 3D knihovna je součástí hry; při hraní se nic nestahuje z externích CDN.
 
 ## Hrát
 
@@ -19,27 +19,32 @@ Při vývoji `npm run build` sestaví aktuální verzi do `_site/play.html`; `np
 | Silnější úder | Podržet mezerník a pustit u míčku | Podržet a pustit ÚDER |
 | Směr úderu | Q doleva, E doprava | Směr místa, kam vedete hráče |
 | Vysoký lob | L | LOB |
+| Kamera: celý kurt / za hráčem | C | Tlačítko kamery pod kurtem |
 | Pauza / pokračovat | Esc nebo P | Tlačítko Pauza |
 | Celá obrazovka / zpět | F; Esc pro návrat | Tlačítko Celá obrazovka / Zmenšit |
 
-Asistence automaticky načasuje základní úder, když hráč stojí blízko míčku. Lze ji vypnout na bočním panelu. Pohyb a správná pozice zůstávají na vás. Bez určeného směru hráč míří do volného prostoru. Tři obtížnosti mění rychlost, reakce a přesnost soupeře; soupeř běhá podle stejné fyziky, bez teleportování. Opuštění okna automaticky pozastaví zápas.
+Asistence automaticky načasuje základní úder, když hráč stojí blízko míčku. Lze ji vypnout na bočním panelu. Pro silný úder podržte mezerník a pusťte jej u míčku; během nabíjení hráč čeká na vaše puštění. Pohyb a správná pozice zůstávají na vás. Bez určeného směru hráč míří do volného prostoru. Tři obtížnosti mění rychlost, reakce a přesnost soupeře; soupeř běhá podle stejné fyziky, bez teleportování. Asistence ukazuje i předpokládané místo dopadu míčku. Opuštění okna automaticky pozastaví zápas.
 
 Krátký set do 4 her s rozdílem dvou; za stavu 3 : 3 se hraje tie-break do 7 bodů s rozdílem dvou. Běžné hry používají 0, 15, 30, 40, shodu a výhodu. Pro svižnou hru jsou základní údery a podání vedené do kurtu; nejde o úplnou simulaci profesionálního tenisu (nejsou druhá podání ani chyby nohou).
 
 ## Vývoj
 
-Vyžaduje Node.js 20+, doporučeno 24. Žádné závislosti se neinstalují.
+Vyžaduje Node.js 20+, doporučeno 24. Prohlížeč potřebuje WebGL 2 a zapnutou grafickou akceleraci. Závislosti jsou přesně uzamčené v `package-lock.json`.
 
 ```sh
+npm ci           # Three.js a esbuild podle lockfilu
+npm run build    # sestavení před lokálním spuštěním
 npm start        # lokální server na portu 3000; lze změnit pomocí PORT
 npm test         # fyzika, skóre, podání a chování soupeře
 npm run check   # kontrola syntaxe
-npm run build   # statické soubory + samostatná offline verze v _site/
+npm run export  # aktualizace přiloženého bundle.js a samostatného play.html
 ```
 
 Pro automatické ověření prohlížeče: Python s balíčkem Playwright a Chromium, pak `python tests/browser_smoke.py`. Skript spouští vlastní server a kontroluje desktop i mobil.
 
-`game.js` obsahuje simulaci v pevných krocích 120 Hz, `app.js` vykreslování a ovládání. Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, kresba a zvuky jsou lokální; hra za běhu nevolá externí servery.
+`game.js` obsahuje simulaci v pevných krocích 120 Hz, `renderer3d.js` scénu a perspektivní kamery v Three.js, `app.js` ovládání a rozhraní. Dotykové i myší souřadnice se určují průsečíkem paprsku kamery s kurtem. `build.js` sestaví veškerý JavaScript do `bundle.js`; `npm run export` aktualizuje i tento přiložený bundle a samostatný `play.html`, aby fungovalo hostování přímo z větve `main` a hraní offline. Po úpravách kódu před publikací spusťte `npm run export`.
+
+Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, modely, textura kurtu a zvuky jsou lokální; hra za běhu nevolá externí servery. Oznámení licence Three.js je v `THIRD_PARTY_NOTICES.txt` a uvnitř bundlu. Testy prohlížeče ověřují skutečné WebGL vykreslování, obě kamery, fullscreen, výměny, skóre i mobilní ovládání; software WebGL v testech není měřením výkonu skutečného telefonu.
 
 ## Zveřejnění na GitHub Pages
 
