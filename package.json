@@ -1,0 +1,14 @@
+{
+  "name": "match-point-tenis",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Plynulý tenis pro jednoho hráče proti počítači.",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js",
+    "build": "node build.js",
+    "check": "node --check game.js && node --check app.js && node --check server.js && node --check build.js"
+  },
+  "engines": { "node": ">=20" }
+}
