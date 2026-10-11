@@ -1,6 +1,6 @@
 # Match Point 3D
 
-Plně hratelný 3D tenis pro jednoho hráče proti počítači. Prostorový antukový kurt, animovaní hráči a rakety, letící míček, stíny a stadion. Hra v češtině běží na počítači i telefonu bez účtu nebo reklam. 3D knihovna je součástí hry; při hraní se nic nestahuje z externích CDN.
+Plně hratelný 3D tenis pro jednoho hráče proti počítači. Prostorový antukový kurt s PBR materiálem, denní osvětlení, animovaní hráči a rakety, letící míček, stíny a stadion. Hra v češtině běží na počítači i telefonu bez účtu nebo reklam. 3D knihovna, povrchové mapy i HDR osvětlení jsou součástí hry; při hraní se nic nestahuje z externích CDN.
 
 ## Hrát
 
@@ -44,9 +44,11 @@ npm run export  # aktualizace přiloženého bundle.js a samostatného play.html
 
 Pro automatické ověření prohlížeče: Python s balíčkem Playwright a Chromium, pak `python tests/browser_smoke.py`. Skript spouští vlastní server a kontroluje desktop i mobil.
 
-`game.js` obsahuje simulaci v pevných krocích 120 Hz, `renderer3d.js` scénu a perspektivní kamery v Three.js, `app.js` ovládání a rozhraní. Dotykové i myší souřadnice se určují průsečíkem paprsku kamery s kurtem. `build.js` sestaví veškerý JavaScript do `bundle.js`; `npm run export` aktualizuje i tento přiložený bundle a samostatný `play.html`, aby fungovalo hostování přímo z větve `main` a hraní offline. Po úpravách kódu před publikací spusťte `npm run export`.
+`game.js` obsahuje simulaci v pevných krocích 120 Hz, `renderer3d.js` scénu a perspektivní kamery v Three.js, `clay3d.js` antukový materiál, `daylight3d.js` osvětlení a `app.js` ovládání a rozhraní. Dotykové i myší souřadnice se určují průsečíkem paprsku kamery s kurtem. `build.js` sestaví veškerý JavaScript i importované obrázky a HDR do `bundle.js`; `npm run export` aktualizuje i tento přiložený bundle a samostatný `play.html`, aby fungovalo hostování přímo z větve `main` a hraní offline. Po úpravách kódu před publikací spusťte `npm run export`.
 
-Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, modely, textura kurtu a zvuky jsou lokální; hra za běhu nevolá externí servery. Oznámení licence Three.js je v `THIRD_PARTY_NOTICES.txt` a uvnitř bundlu. Testy prohlížeče ověřují skutečné WebGL vykreslování, všechny tři kamery, fullscreen, výměny, skóre i mobilní ovládání; software WebGL v testech není měřením výkonu skutečného telefonu.
+Web nevyžaduje backend, databázi, klíče ani placené služby. Fonty, modely, textura kurtu a zvuky jsou lokální; hra za běhu nevolá externí servery. Zdrojové CC0 mapy, HDR a GLB strom jsou uložené v `assets/`; jejich původ a licence jsou v [assets/LICENSES.md](assets/LICENSES.md). Sestavení je vloží do hry jako data URL, takže samostatný `play.html` funguje i bez připojení. Oznámení licence Three.js je uvnitř bundlu; `THIRD_PARTY_NOTICES.txt` obsahuje také licence grafických assetů a sestavení je kopíruje do `_site/`. Testy prohlížeče ověřují skutečné WebGL vykreslování, všechny tři kamery, fullscreen, výměny, skóre i mobilní ovládání; software WebGL v testech není měřením výkonu skutečného telefonu.
+
+Antuka kombinuje fotografické albedo, normály a roughness s jemnými barevnými odchylkami a stopami bot a dopadů. Denní HDR se zpracuje přes PMREM; slunce vrhá stíny v rozlišení 2048 px, na telefonu 1024 px. `vegetation3d.js` vykresluje 30 modelů stromu pomocí tří instancovaných meshů. Herní kamery, rozměry kurtu a simulace zůstávají stejné.
 
 ## Zveřejnění na GitHub Pages
 

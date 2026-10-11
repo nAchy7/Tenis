@@ -1,6 +1,6 @@
 {
   "name": "match-point-tenis",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Plně hratelný 3D tenis pro jednoho hráče proti počítači.",
@@ -9,7 +9,7 @@
     "test": "node --test tests/*.test.js",
     "build": "node build.js",
     "export": "node build.js --portable",
-    "check": "node --check game.js && node --check app.js && node --check renderer3d.js && node --check server.js && node --check build.js"
+    "check": "node --check game.js && node --check app.js && node --check renderer3d.js && node --check clay3d.js && node --check daylight3d.js && node --check vegetation3d.js && node --check server.js && node --check build.js"
   },
   "engines": {
     "node": ">=20"
